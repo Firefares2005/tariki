@@ -1,0 +1,39 @@
+<resources>
+    <string name="app_name">طريقي</string>
+    <string name="enter_phone">أدخل رقم هاتفك</string>
+    <string name="driver">سائق</string>
+    <string name="passenger">راكب</string>
+    <string name="continue_btn">متابعة</string>
+    <string name="where_to">أين تريد الذهاب؟</string>
+    <string name="propose_price">اقترح سعرك</string>
+    <string name="searching_drivers">جاري البحث عن سائقين...</string>
+    <string name="new_offer">عرض جديد</string>
+    <string name="accept">قبول</string>
+    <string name="reject">رفض</string>
+    <string name="cancel">إلغاء</string>
+    <string name="online">متصل</string>
+    <string name="offline">غير متصل</string>
+    <string name="make_offer">قدم عرضك</string>
+    <string name="send_offer">إرسال العرض</string>
+    <string name="ride_accepted">تم قبول رحلتك</string>
+    <string name="driver_arriving">السائق في الطريق</string>
+    <string name="start_ride">ابدأ الرحلة</string>
+    <string name="end_ride">إنهاء الرحلة</string>
+    <string name="rate_experience">قيّم تجربتك</string>
+    <string name="dzd">دج</string>
+
+    <string name="select_language">اختر اللغة</string>
+    <string name="profile_setup">إعداد الملف الشخصي</string>
+    <string name="full_name">الاسم الكامل</string>
+    <string name="save">حفظ</string>
+    <string name="car_setup">إعداد السيارة</string>
+    <string name="car_brand">ماركة السيارة</string>
+    <string name="car_model">موديل السيارة</string>
+    <string name="car_year">سنة تصنيع السيارة</string>
+    <string name="car_color">لون السيارة</string>
+    <string name="license_plate">لوحة الترخيص</string>
+    <string name="upload_photo">تحميل الصورة</string>
+    <string name="car_photo">صورة السيارة</string>
+    <string name="license_photo">صورة رخصة السياقة</string>
+    <string name="offline_msg">لا يوجد اتصال بالإنترنت</string>
+</resources>

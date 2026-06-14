@@ -1,0 +1,9 @@
+{
+  "name": "Tariki",
+  "description": "Algerian ride-hailing app with negotiable pricing, live map tracking, and instant driver negotiation.",
+  "requestFramePermissions": [
+    "android.permission.ACCESS_FINE_LOCATION",
+    "android.permission.ACCESS_COARSE_LOCATION"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

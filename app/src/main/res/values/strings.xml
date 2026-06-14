@@ -1,0 +1,39 @@
+<resources>
+    <string name="app_name">TARIKI</string>
+    <string name="enter_phone">Enter your phone number</string>
+    <string name="driver">Driver</string>
+    <string name="passenger">Passenger</string>
+    <string name="continue_btn">Continue</string>
+    <string name="where_to">Where to?</string>
+    <string name="propose_price">Propose your price</string>
+    <string name="searching_drivers">Searching for drivers...</string>
+    <string name="new_offer">New Offer</string>
+    <string name="accept">Accept</string>
+    <string name="reject">Reject</string>
+    <string name="cancel">Cancel</string>
+    <string name="online">Online</string>
+    <string name="offline">Offline</string>
+    <string name="make_offer">Make an Offer</string>
+    <string name="send_offer">Send Offer</string>
+    <string name="ride_accepted">Ride Accepted</string>
+    <string name="driver_arriving">Driver is on the way</string>
+    <string name="start_ride">Start Ride</string>
+    <string name="end_ride">End Ride</string>
+    <string name="rate_experience">Rate your experience</string>
+    <string name="dzd">DZD</string>
+
+    <string name="select_language">Select Language</string>
+    <string name="profile_setup">Profile Setup</string>
+    <string name="full_name">Full Name</string>
+    <string name="save">Save</string>
+    <string name="car_setup">Car Setup</string>
+    <string name="car_brand">Car Brand</string>
+    <string name="car_model">Car Model</string>
+    <string name="car_year">Car Year</string>
+    <string name="car_color">Car Color</string>
+    <string name="license_plate">License Plate</string>
+    <string name="upload_photo">Upload Photo</string>
+    <string name="car_photo">Car Photo</string>
+    <string name="license_photo">License Photo</string>
+    <string name="offline_msg">No internet connection</string>
+</resources>
