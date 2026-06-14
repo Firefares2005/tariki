@@ -233,7 +233,7 @@ fun PassengerHomeScreen(
                     "searching" -> {
                         flowState = PassengerFlowState.WaitingForOffers(activeReq)
                     }
-                    "accepted" -> {
+                    "accepted", "driver_arrived" -> {
                         val acceptedOffer = TarikiRepository.getAcceptedOfferForRide(activeReq.id ?: "")
                         if (acceptedOffer != null) {
                             activeOffer = acceptedOffer
@@ -273,7 +273,7 @@ fun PassengerHomeScreen(
                 if (updated != null) {
                     if (updated.status == "in_progress") {
                         flowState = PassengerFlowState.ActiveRide(updated)
-                    } else if (updated.status == "cancelled") {
+                    } else if (updated.status == "cancelled" || updated.status == "completed") {
                         flowState = PassengerFlowState.Idle
                     } else {
                         flowState = PassengerFlowState.RideAccepted(updated, acceptedOffer)
@@ -283,8 +283,8 @@ fun PassengerHomeScreen(
         } else if (flowState is PassengerFlowState.ActiveRide) {
             val req = (flowState as PassengerFlowState.ActiveRide).rideRequest
             TarikiRepository.observeRideRequest(req.id ?: "").collectLatest { updated ->
-                if (updated != null && updated.status == "completed") {
-                    flowState = PassengerFlowState.Completed(updated)
+                if (updated != null && (updated.status == "completed" || updated.status == "cancelled")) {
+                    flowState = PassengerFlowState.Idle
                 }
             }
         }

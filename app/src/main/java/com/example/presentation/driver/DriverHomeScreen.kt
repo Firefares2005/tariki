@@ -986,7 +986,7 @@ fun DriverCompletedBottomCard(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                text = "تم إنهاء الرحلة بنجاح!",
+                text = "انتهت الرحلة! 🏁",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 color = TarikiColors.DarkGreen
