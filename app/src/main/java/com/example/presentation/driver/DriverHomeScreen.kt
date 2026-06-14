@@ -360,20 +360,6 @@ fun DriverHomeScreen(
                                     uncheckedTrackColor = TarikiColors.Border
                                 )
                             )
-                            IconButton(onClick = {
-                                coroutineScope.launch {
-                                    // Cleanly transition offline first
-                                    TarikiRepository.setDriverOnline(driverId, false)
-                                    SessionManager.clear()
-                                    onLogout()
-                                }
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Default.Logout,
-                                    contentDescription = "تسجيل الخروج",
-                                    tint = TarikiColors.Error
-                                )
-                            }
                         }
                     }
                 },
@@ -442,7 +428,9 @@ fun DriverHomeScreen(
                         else -> null
                     },
                     showDrivers = flowState !is DriverFlowState.Offline,
-                    hasLocationPermission = hasLocationPermission
+                    hasLocationPermission = hasLocationPermission,
+                    driverLat = if (flowState is DriverFlowState.Offline || flowState is DriverFlowState.IdleOnline) null else driverLat,
+                    driverLng = if (flowState is DriverFlowState.Offline || flowState is DriverFlowState.IdleOnline) null else driverLng
                 )
 
                 // Bottom Panel dynamically responding to driver context

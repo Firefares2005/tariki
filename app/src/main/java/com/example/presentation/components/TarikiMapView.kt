@@ -35,20 +35,34 @@ fun TarikiMapView(
     destinationAddress: String? = null,
     showDrivers: Boolean = false,
     activeDriverAngle: Float = 0f,
-    hasLocationPermission: Boolean = false
+    hasLocationPermission: Boolean = false,
+    driverLat: Double? = null,
+    driverLng: Double? = null
 ) {
     // Default camera center (Algiers City Centre) if coordinates not provided
     val defaultLat = 36.7538
     val defaultLng = 3.0588
 
     var routePoints by remember { mutableStateOf<List<LatLng>>(emptyList()) }
+    var driverRoutePoints by remember { mutableStateOf<List<LatLng>>(emptyList()) }
 
+    // Route from passenger pickup to passenger destination (Blue)
     LaunchedEffect(pickupLat, pickupLng, destLat, destLng) {
         if (pickupLat != null && pickupLng != null && destLat != null && destLng != null) {
             val route = RouteUtils.fetchRoute(pickupLat, pickupLng, destLat, destLng)
             routePoints = route
         } else {
             routePoints = emptyList()
+        }
+    }
+
+    // Route from driver current location to passenger pickup (Red)
+    LaunchedEffect(driverLat, driverLng, pickupLat, pickupLng) {
+        if (driverLat != null && driverLng != null && pickupLat != null && pickupLng != null) {
+            val route = RouteUtils.fetchRoute(driverLat, driverLng, pickupLat, pickupLng)
+            driverRoutePoints = route
+        } else {
+            driverRoutePoints = emptyList()
         }
     }
 
@@ -64,15 +78,21 @@ fun TarikiMapView(
         position = CameraPosition.fromLatLngZoom(cameraCenter, 14f)
     }
 
-    // Smoothly animate/move camera when locations change
-    LaunchedEffect(cameraCenter, routePoints) {
-        if (routePoints.isNotEmpty()) {
+    // Smoothly animate/move camera to encompass all relevant coordinates
+    LaunchedEffect(cameraCenter, routePoints, driverRoutePoints, driverLat, driverLng, pickupLat, pickupLng, destLat, destLng) {
+        val boundsPoints = mutableListOf<LatLng>()
+        if (pickupLat != null && pickupLng != null) boundsPoints.add(LatLng(pickupLat, pickupLng))
+        if (destLat != null && destLng != null) boundsPoints.add(LatLng(destLat, destLng))
+        if (driverLat != null && driverLng != null) boundsPoints.add(LatLng(driverLat, driverLng))
+        boundsPoints.addAll(routePoints)
+        boundsPoints.addAll(driverRoutePoints)
+
+        if (boundsPoints.isNotEmpty()) {
             try {
                 val builder = com.google.android.gms.maps.model.LatLngBounds.Builder()
-                routePoints.forEach { builder.include(it) }
-                // Use a safe padding
+                boundsPoints.forEach { builder.include(it) }
                 cameraPositionState.animate(
-                    com.google.android.gms.maps.CameraUpdateFactory.newLatLngBounds(builder.build(), 150),
+                    com.google.android.gms.maps.CameraUpdateFactory.newLatLngBounds(builder.build(), 120),
                     1000
                 )
             } catch (e: Exception) {
@@ -109,7 +129,7 @@ fun TarikiMapView(
             if (pickupLat != null && pickupLng != null) {
                 Marker(
                     state = com.google.maps.android.compose.MarkerState(position = LatLng(pickupLat, pickupLng)),
-                    title = pickupAddress ?: "موقعي",
+                    title = pickupAddress ?: "موقع الراكب",
                     snippet = "موقع الانطلاق",
                     icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_AZURE)
                 )
@@ -124,8 +144,18 @@ fun TarikiMapView(
                 )
             }
 
-            // show surrounding driver markers if showDrivers is true
-            if (showDrivers && pickupLat != null && pickupLng != null) {
+            // marker for driver himself if coordinates passed
+            if (driverLat != null && driverLng != null) {
+                Marker(
+                    state = com.google.maps.android.compose.MarkerState(position = LatLng(driverLat, driverLng)),
+                    title = "موقعي الحالي كـ سائق 🚗",
+                    snippet = "مكاني الآن",
+                    icon = com.google.android.gms.maps.model.BitmapDescriptorFactory.defaultMarker(com.google.android.gms.maps.model.BitmapDescriptorFactory.HUE_GREEN)
+                )
+            }
+
+            // show surrounding driver markers if showDrivers is true & no specific driver is bound
+            if (showDrivers && pickupLat != null && pickupLng != null && (driverLat == null || driverLng == null)) {
                 Marker(
                     state = com.google.maps.android.compose.MarkerState(position = LatLng(pickupLat + 0.003, pickupLng - 0.002)),
                     title = "سائق طريقي 🚗",
@@ -140,6 +170,16 @@ fun TarikiMapView(
                 )
             }
 
+            // Red route from Driver's location to Passenger's location
+            if (driverRoutePoints.isNotEmpty()) {
+                Polyline(
+                    points = driverRoutePoints,
+                    color = Color(0xFFE53935), // Beautiful Red for driver path to pickup
+                    width = 14f
+                )
+            }
+
+            // Blue route from Passenger's location to Destination
             if (routePoints.isNotEmpty()) {
                 Polyline(
                     points = routePoints,

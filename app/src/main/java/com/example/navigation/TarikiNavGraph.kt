@@ -141,6 +141,11 @@ fun TarikiNavGraph() {
             ProfileScreen(
                 onBack = {
                     navController.navigateUp()
+                },
+                onLogout = {
+                    navController.navigate("phone_number") {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }

@@ -15,7 +15,8 @@ data class User(
     @SerialName("is_active") val isActive: Boolean? = true,
     @SerialName("is_verified") val isVerified: Boolean? = false,
     @SerialName("preferred_language") val preferredLanguage: String? = "ar",
-    @SerialName("created_at") val createdAt: String? = null
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("device_id") val deviceId: String? = null
 )
 
 @Serializable

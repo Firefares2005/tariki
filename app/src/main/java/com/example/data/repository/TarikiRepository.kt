@@ -43,16 +43,64 @@ object TarikiRepository {
     /**
      * Look up user by phone. Register if new.
      */
-    suspend fun loginOrRegister(phone: String, userType: String): Result<User> = withContext(Dispatchers.IO) {
+    suspend fun loginOrRegister(phone: String, userType: String, deviceId: String? = null): Result<User> = withContext(Dispatchers.IO) {
         try {
+            // 1. Device ban checks if deviceId is provided
+            if (deviceId != null && deviceId.isNotBlank()) {
+                // Check if device is explicitly blacklisted in banned_devices
+                try {
+                    val banExists = supabase.postgrest.from("banned_devices").select {
+                        filter { eq("device_id", deviceId) }
+                    }.decodeSingleOrNull<Map<String, String>>()
+                    if (banExists != null) {
+                        return@withContext Result.failure(Exception("BANNED_DEVICE"))
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "banned_devices check fail in Database. If the banned_devices table does not exist or has RLS, please ensure it is configured. Error: ", e)
+                }
+
+                // Check if any existing user with this device ID has been set to inactive (is_active = false)
+                try {
+                    val inactiveUsersByDevice = supabase.postgrest.from("users").select {
+                        filter {
+                            eq("device_id", deviceId)
+                            eq("is_active", false)
+                        }
+                    }.decodeList<User>()
+                    if (inactiveUsersByDevice.isNotEmpty()) {
+                        return@withContext Result.failure(Exception("BANNED_DEVICE"))
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "users device inactivation check fail: ", e)
+                }
+            }
+
             val response = supabase.postgrest.from("users").select {
                 filter { eq("phone", phone) }
             }.decodeSingleOrNull<User>()
 
             if (response != null) {
-                Result.success(response)
+                // If user exists but is marked inactive, block them
+                if (response.isActive == false) {
+                    return@withContext Result.failure(Exception("BANNED_USER"))
+                }
+
+                // If user logs in with a new/different device or missing deviceId, update it in DB
+                if (deviceId != null && deviceId.isNotBlank() && response.deviceId != deviceId) {
+                    try {
+                        supabase.postgrest.from("users").update(mapOf(
+                            "device_id" to deviceId
+                        )) {
+                            filter { eq("id", response.id) }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Update user device_id failed", e)
+                    }
+                }
+
+                Result.success(response.copy(deviceId = deviceId ?: response.deviceId))
             } else {
-                Log.d(TAG, "User not found, registering new user phone=$phone")
+                Log.d(TAG, "User not found, registering new user phone=$phone with deviceId=$deviceId")
                 val newUser = User(
                     id = UUID.randomUUID().toString(),
                     phone = phone,
@@ -60,7 +108,8 @@ object TarikiRepository {
                     fullName = "",
                     preferredLanguage = "ar",
                     rating = 5.0,
-                    totalRides = 0
+                    totalRides = 0,
+                    deviceId = deviceId
                 )
                 try {
                     supabase.postgrest.from("users").insert(newUser)
@@ -79,7 +128,8 @@ object TarikiRepository {
                 fullName = simulatedUser?.fullName ?: "",
                 preferredLanguage = "ar",
                 rating = 5.0,
-                totalRides = 0
+                totalRides = 0,
+                deviceId = deviceId
             )
             simulatedUser = fallbackUser
             Result.success(fallbackUser)
@@ -643,6 +693,31 @@ object TarikiRepository {
         } catch (e: Exception) {
             Log.e(TAG, "getPendingOfferForDriver error: ${e.message}", e)
             local
+        }
+    }
+
+    suspend fun getRideHistory(userId: String): Result<List<RideRequest>> = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val pRides = supabase.postgrest.from("ride_requests").select {
+                filter {
+                    eq("passenger_id", userId)
+                }
+            }.decodeList<RideRequest>()
+
+            val dRides = supabase.postgrest.from("ride_requests").select {
+                filter {
+                    eq("accepted_driver_id", userId)
+                }
+            }.decodeList<RideRequest>()
+
+            val combined = (pRides + dRides).distinctBy { it.id }.sortedByDescending { it.createdAt ?: "" }
+            Result.success(combined)
+        } catch (e: Exception) {
+            Log.e(TAG, "getRideHistory database lookup failed, falling back to simulated session data", e)
+            val filteredSimulated = simulatedRideRequests.filter { 
+                it.passengerId == userId || it.acceptedDriverId == userId 
+            }.sortedByDescending { it.createdAt ?: "" }
+            Result.success(filteredSimulated)
         }
     }
 }

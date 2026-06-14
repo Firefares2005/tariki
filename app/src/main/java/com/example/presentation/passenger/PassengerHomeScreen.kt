@@ -208,6 +208,41 @@ fun PassengerHomeScreen(
     var activeOffer by remember { mutableStateOf<DriverOffer?>(null) }
     var ratingGiven by remember { mutableStateOf(5) }
 
+    // Polling driver location for the passenger to draw the red/blue routes
+    var driverLatState by remember { mutableStateOf<Double?>(null) }
+    var driverLngState by remember { mutableStateOf<Double?>(null) }
+
+    LaunchedEffect(flowState, pickupLat, pickupLng) {
+        val driverId = when (val s = flowState) {
+            is PassengerFlowState.RideAccepted -> s.acceptedOffer.driverId
+            is PassengerFlowState.ActiveRide -> s.rideRequest.acceptedDriverId
+            else -> null
+        }
+        if (driverId != null && pickupLat != 0.0 && pickupLng != 0.0) {
+            if (driverId == "sim_driver_ahmed") {
+                driverLatState = pickupLat + 0.008
+                driverLngState = pickupLng - 0.008
+            } else if (driverId == "sim_driver_kamal") {
+                driverLatState = pickupLat - 0.01
+                driverLngState = pickupLng + 0.01
+            } else {
+                while (true) {
+                    // Fetch driver details
+                    TarikiRepository.getDriverProfile(driverId).onSuccess { profile ->
+                        if (profile != null && profile.currentLat != null && profile.currentLng != null) {
+                            driverLatState = profile.currentLat
+                            driverLngState = profile.currentLng
+                        }
+                    }
+                    delay(3000) // Poll every 3 seconds
+                }
+            }
+        } else {
+            driverLatState = null
+            driverLngState = null
+        }
+    }
+
     // Load user session
     LaunchedEffect(Unit) {
         val details = SessionManager.getUserDetails()
@@ -220,7 +255,7 @@ fun PassengerHomeScreen(
             val activeReq = TarikiRepository.getActiveRideRequestForPassenger(pId)
             if (activeReq != null) {
                 android.util.Log.d("DEBUG_PASSENGER", "Found active state: ${activeReq.status}")
-                proposedPrice = activeReq.passengerProposedPrice
+                proposedPrice = activeReq.finalPrice ?: activeReq.passengerProposedPrice
                 distanceKm = activeReq.distanceKm ?: distanceKm
                 pickupLat = activeReq.pickupLat
                 pickupLng = activeReq.pickupLng
@@ -332,16 +367,6 @@ fun PassengerHomeScreen(
                                 }
                             }
                         }
-
-                        // Logout Icon
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                SessionManager.clear()
-                                onLogout()
-                            }
-                        }) {
-                            Icon(Icons.Default.Logout, contentDescription = "Log Out", tint = TarikiColors.Error)
-                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = TarikiColors.Cream)
@@ -370,7 +395,9 @@ fun PassengerHomeScreen(
                     pickupAddress = pickupAddress,
                     destinationAddress = if (destinationAddress.isNotBlank()) destinationAddress else null,
                     showDrivers = isWaiting || isAccepted,
-                    hasLocationPermission = hasLocationPermission
+                    hasLocationPermission = hasLocationPermission,
+                    driverLat = driverLatState,
+                    driverLng = driverLngState
                 )
 
                 // Bottom Panel dynamically reflecting the user state context
@@ -488,7 +515,7 @@ fun PassengerHomeScreen(
                             )
                         }
                         is PassengerFlowState.ActiveRide -> {
-                            BottomActiveCard(price = proposedPrice)
+                            BottomActiveCard(price = state.rideRequest.finalPrice ?: proposedPrice)
                         }
                         is PassengerFlowState.Completed -> {
                             BottomCompletedCard(

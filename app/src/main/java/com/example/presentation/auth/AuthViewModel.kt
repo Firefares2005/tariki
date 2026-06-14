@@ -36,7 +36,17 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
             _isLoading.value = true
             _error.value = null
             
-            TarikiRepository.loginOrRegister(phone, userType)
+            // Safe extraction of secure unique Android ID
+            val deviceId = try {
+                android.provider.Settings.Secure.getString(
+                    getApplication<Application>().contentResolver,
+                    android.provider.Settings.Secure.ANDROID_ID
+                ) ?: "simulated_device_id"
+            } catch (e: Exception) {
+                "simulated_device_id"
+            }
+
+            TarikiRepository.loginOrRegister(phone, userType, deviceId)
                 .onSuccess { user ->
                     _isLoading.value = false
                     // Save session details globally in DataStore Preferences
@@ -52,7 +62,11 @@ class AuthViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 .onFailure { exception ->
                     _isLoading.value = false
-                    val errorMsg = "حدث خطأ بالاتصال بالخادم. يرجى المحاولة لاحقاً."
+                    val errorMsg = when (exception.message) {
+                        "BANNED_DEVICE" -> "عذراً، هذا الجهاز تم حظره من استخدام تطبيق طريقي بسبب مخالفة الشروط والسياسات."
+                        "BANNED_USER" -> "عذراً، هذا الحساب تم إيقافه بشكل كلي. يرجى مراجعة الإدارة."
+                        else -> "حدث خطأ بالاتصال بالخادم. يرجى المحاولة لاحقاً."
+                    }
                     _error.value = errorMsg
                     onError(errorMsg)
                     Log.e(TAG, "loginOrRegister failed", exception)
